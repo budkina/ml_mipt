@@ -1,0 +1,11 @@
+FROM continuumio/miniconda3
+
+RUN conda install pytorch
+RUN conda install scikit-learn
+RUN conda install pandas
+RUN conda install matplotlib
+ADD train.py train.py
+ADD dataset.py dataset.py
+ADD data_coniguration.json data_coniguration.json
+ADD train_coniguration.json train_coniguration.json
+RUN mkdir output
