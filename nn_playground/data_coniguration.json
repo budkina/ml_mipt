@@ -1,1 +1,1 @@
-{"type": "moons", "n_samples": 1000, "shuffle": true, "noise": 0}
+{"train": {"type": "moons", "n_samples": 1000, "shuffle": true, "noise": 0.2, "random_state": 1}, "test": {"type": "moons", "n_samples": 20, "shuffle": true, "noise": 0.1, "random_state": 2}}

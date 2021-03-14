@@ -92,8 +92,9 @@ class Trainer:
         first_batch = next(iter(train_dataloader))
         self.writer.add_graph(self.model, first_batch[0])
 
+        n_iter = 0
         for epoch in range(n_epochs):
-            print("epoch: ", epoch)
+            logging.debug(F"epoch: {epoch}")
             epoch_loss = 0
             for x_batch, y_batch in train_dataloader:
                 self.optimizer.zero_grad()
@@ -104,39 +105,60 @@ class Trainer:
                 epoch_loss+=loss.item()
 
                 # Summary plots
-                self.writer.add_scalar('Loss on epoch end', epoch_loss)
-                self.writer.add_scalar('Loss/train size', epoch_loss/len(train_dataloader))
+                self.writer.add_scalar('Loss on epoch end', epoch_loss, n_iter)
+                n_iter+=1
 
         logging.debug("Fit completed. Model parameters:")
         for param in self.model.parameters():
             logging.debug(param)
 
-
-    def predict(self, test_dataloader):
-        all_outputs = torch.tensor([], dtype=torch.long)
-        self.model.eval()
-        with torch.no_grad():
-            for i, (x_batch, y_batch) in enumerate(test_dataloader):
-                pass
-        return all_outputs
-
     def predict_proba(self, test_dataloader):
         all_outputs = torch.tensor([], dtype=torch.float32)
         self.model.eval()
         with torch.no_grad():
-            for i, (x_batch, y_batch) in enumerate(test_dataloader):
-                pass
+            for x_batch, y_batch in test_dataloader:
+                output = self.model(x_batch)
+                all_outputs = torch.cat((all_outputs,output),0)
         return all_outputs
 
-    def predict_proba_tensor(self, T):
-        self.model.eval()
-        with torch.no_grad():
-            pass
-        return output
+    def predict(self, test_dataloader):
+        output_proba = self.predict_proba(test_dataloader)
+        return torch.max(output_proba.data,1)[1]
+
+def generate_dataset(data_coniguration):
+    data = None
+    datatype = data_coniguration['type']
+    if datatype == 'circles':
+        data=dataset.Circles(n_samples = data_coniguration['n_samples'],
+            shuffle = data_coniguration['shuffle'],
+            noise = data_coniguration['noise'],
+            random_state = data_coniguration['random_state'])
+    elif datatype == 'gaussian':
+        data=dataset.Gussian(n_samples = data_coniguration['n_samples'],
+            shuffle = data_coniguration['shuffle'],
+            random_state = data_coniguration['random_state'])
+    elif datatype == 'moons':
+        data=dataset.Moons(n_samples = data_coniguration['n_samples'], 
+            shuffle = data_coniguration['shuffle'],
+            noise = data_coniguration['noise'],
+            random_state = data_coniguration['random_state'])
+    elif datatype == 'custom':
+        data=dataset.Custom('custom_dataset.csv')
+    else:
+        logging.error(F'Incorrect type of dataset: {datatype}')
+    
+    return data
+
+def predict_proba_on_mesh_tensor(clf, xx, yy):
+    q = torch.Tensor(np.c_[xx.ravel(), yy.ravel()])
+    Z = clf.predict_proba_tensor(q)[:,1]
+    Z = Z.reshape(xx.shape)
+    return Z
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
+    # read model and trainer configuration
     with open('train_coniguration.json') as json_file:
         train_coniguration = json.load(json_file)
         layers = train_coniguration['layers']
@@ -146,29 +168,28 @@ if __name__ == "__main__":
         criterion = train_coniguration['criterion']
         n_epochs = train_coniguration['n_epochs']
 
+    # read data configuration
     with open('data_coniguration.json') as json_file:
         data_coniguration = json.load(json_file)
-        datatype=data_coniguration['type']
 
-        if datatype == 'circles':
-            train_set=dataset.Circles(n_samples = data_coniguration['n_samples'],
-                shuffle = data_coniguration['shuffle'],
-                noise = data_coniguration['noise'])
-        elif datatype == 'gaussian':
-            train_set=dataset.Gussian(n_samples = data_coniguration['n_samples'],
-                shuffle = data_coniguration['shuffle'])
-        elif datatype == 'moons':
-            train_set=dataset.Moons(n_samples = data_coniguration['n_samples'], 
-                shuffle = data_coniguration['shuffle'],
-                noise = data_coniguration['noise'])
-        elif datatype == 'custom':
-            train_set=dataset.Custom('custom_dataset.csv')
-        else:
-            logging.error(F'Incorrect type of dataset: {datatype}')
-            sys.exit()
-
-    train_set.plot_data('output/plot.png')
+    # generate train data set
+    train_set = generate_dataset(data_coniguration['train'])
+    train_set.plot_data('output/train_set.png')
     train_dataloader=DataLoader(train_set, batch_size=batch_size, shuffle = True)
+
+    # train model
     model=FC(layers)
     trainer = Trainer(model, learning_rate, optimizer, criterion)
     trainer.fit(train_dataloader, n_epochs)
+
+    # test model
+    test_set = generate_dataset(data_coniguration['test'])
+    test_set.plot_data('output/test_set.png')
+    test_dataloader=DataLoader(test_set, batch_size=batch_size, shuffle = False)
+
+    test_prediction = trainer.predict(test_dataloader)
+    test_prediction_proba = trainer.predict_proba(test_dataloader)
+    
+    # visualize decision surface
+    X_train, y_train = train_set.get_numpy_data()
+    X_test, y_test = train_set.get_numpy_data()

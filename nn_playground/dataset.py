@@ -23,8 +23,12 @@ class MyData(Dataset):
 
     def plot_data(self, filename):
         logging.debug(F'Data plot X: {self.X.shape}; y: {self.y.shape}')
+        plt.figure(figsize = (10,10))
         plt.scatter(self.X[:,0], self.X[:,1], c=self.y)
         plt.savefig(filename)
+
+    def get_numpy_data(self):
+        return self.X, self.y
 
 class Circles(MyData):
     def __init__(self, n_samples, shuffle, noise, random_state=0, factor=.8):
