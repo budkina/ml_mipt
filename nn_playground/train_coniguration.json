@@ -1,0 +1,1 @@
+{"layers": [{"in_features": 2, "out_features": 5, "activation": "relu"}, {"in_features": 5, "out_features": 4, "activation": "relu"}], "batch_size": 4, "optimizer": "adam", "learning_rate": 0.3, "criterion": "crossentropyloss", "n_epochs": 50}
