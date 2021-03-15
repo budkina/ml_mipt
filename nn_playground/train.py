@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime
 
+import numpy as np
 import torch
 from torch import nn
 import torch.optim as optim
@@ -9,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 import dataset
+from visualize_utils import make_meshgrid, predict_proba_on_mesh, plot_predictions
 
 class FC(nn.Module):
     """Fully-connected NN model"""
@@ -125,6 +127,12 @@ class Trainer:
         output_proba = self.predict_proba(test_dataloader)
         return torch.max(output_proba.data,1)[1]
 
+    def predict_proba_tensor(self,T):
+        self.model.eval()
+        with torch.no_grad():
+            output=self.model(T)
+        return output
+
 def generate_dataset(data_coniguration):
     data = None
     datatype = data_coniguration['type']
@@ -149,9 +157,9 @@ def generate_dataset(data_coniguration):
     
     return data
 
-def predict_proba_on_mesh_tensor(clf, xx, yy):
+def predict_proba_on_mesh_tensor(trainer, xx, yy):
     q = torch.Tensor(np.c_[xx.ravel(), yy.ravel()])
-    Z = clf.predict_proba_tensor(q)[:,1]
+    Z = trainer.predict_proba_tensor(q)[:,1]
     Z = Z.reshape(xx.shape)
     return Z
 
@@ -193,3 +201,12 @@ if __name__ == "__main__":
     # visualize decision surface
     X_train, y_train = train_set.get_numpy_data()
     X_test, y_test = train_set.get_numpy_data()
+
+    xx,yy = make_meshgrid(X_train,X_test)
+    Z=predict_proba_on_mesh_tensor(trainer, xx, yy)
+    plot_predictions(xx, yy, Z,
+        filename="output/plot_predictions.png",
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test)
