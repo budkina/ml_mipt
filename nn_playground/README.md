@@ -30,7 +30,7 @@ Options:
 
 - random_state: random state for data generation
 
-3. Build docker container
+3. Build docker container:
 
 ```docker build /path/to/directory/nn_playground -t nn```
 
@@ -46,4 +46,6 @@ Options:
 
 - test_set.png - plot for the test dataset
 
-- plot_predictions.png - prediction surfaces of the classifier
+- plot_predictions_train.png - prediction surfaces of the classifier and train dataset points
+
+- plot_predictions_test.png - prediction surfaces of the classifier and test dataset points
