@@ -52,8 +52,15 @@ class FC(nn.Module):
 
 class Trainer:
     def __init__(self, model, learning_rate, optimizer=None, criterion=None):
+
+        # Select device
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda:0")
+        else:
+            self.device = torch.device("cpu")
+
         # Initialize model
-        self.model = model
+        self.model = model.to(self.device)
 
         # Select optimizer
         if optimizer == 'sgd':
@@ -77,12 +84,6 @@ class Trainer:
             logging.error('Incorrect loss function')
             return
 
-        # Select device
-        if torch.cuda.is_available():
-            self.device = torch.device("cuda:0")
-        else:
-            self.device = torch.device("cpu")
-
         # create tensorboard output
         self.experiment_name = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.writer = SummaryWriter("logs/"+self.experiment_name)
@@ -100,8 +101,8 @@ class Trainer:
             epoch_loss = 0
             for x_batch, y_batch in train_dataloader:
                 self.optimizer.zero_grad()
-                output = self.model(x_batch)
-                loss=self.criterion(output,y_batch)
+                output = self.model(x_batch.to(self.device))
+                loss=self.criterion(output,y_batch.to(self.device))
                 loss.backward()
                 self.optimizer.step()
                 epoch_loss+=loss.item()
@@ -119,7 +120,7 @@ class Trainer:
         self.model.eval()
         with torch.no_grad():
             for x_batch, y_batch in test_dataloader:
-                output = self.model(x_batch)
+                output = self.model(x_batch.to(self.device)).to(torch.device("cpu"))
                 all_outputs = torch.cat((all_outputs,output),0)
         return all_outputs
 
@@ -200,13 +201,16 @@ if __name__ == "__main__":
     
     # visualize decision surface
     X_train, y_train = train_set.get_numpy_data()
-    X_test, y_test = train_set.get_numpy_data()
+    X_test, y_test = test_set.get_numpy_data()
 
-    xx,yy = make_meshgrid(X_train,X_test)
+    xx,yy = make_meshgrid(X_train, X_test)
     Z=predict_proba_on_mesh_tensor(trainer, xx, yy)
     plot_predictions(xx, yy, Z,
-        filename="output/plot_predictions.png",
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test)
+        filename="output/plot_predictions_train.png",
+        X=X_train,
+        y=y_train)
+
+    plot_predictions(xx, yy, Z,
+        filename="output/plot_predictions_test.png",
+        X=X_test,
+        y=y_test)

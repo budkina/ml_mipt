@@ -31,29 +31,22 @@ def predict_proba_on_mesh(clf, xx, yy):
     return Z
 
 
-def plot_predictions(xx, yy, Z, filename, X_train=None, X_test=None, y_train=None, y_test=None,
+def plot_predictions(xx, yy, Z, filename, X=None, y=None,
                      figsize=(10, 10),
                      title="predictions",
                      cm=plt.cm.RdBu,
                      cm_bright=ListedColormap(['#FF0000', '#0000FF'])):
     plt.figure(figsize=figsize)
     plt.contourf(xx, yy, Z, cmap=cm, alpha=.8)
-    # Plot the training points
-    if X_train is not None:
-        plt.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright,
-                    edgecolors='k')
-    # Plot the testing points
-    if X_test is not None:
-        plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap=cm_bright,
-                    edgecolors='k', alpha=0.6)
+    # Plot the points
+    if X is not None:
+        plt.scatter(X[:, 0], X[:, 1], c=y, cmap=cm_bright, edgecolors='k')
 
     plt.xlim(xx.min(), xx.max())
     plt.ylim(yy.min(), yy.max())
     plt.title(title)
     plt.tight_layout()
     plt.savefig(filename)
-
-
 
 if __name__ == "__main__":
     # make data
