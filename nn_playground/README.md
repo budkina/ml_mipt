@@ -1,10 +1,6 @@
 # Getting Started
 
-1. Build docker container
-
-```docker build /path/to/directory/nn_playground -t nn```
-
-2. Provide network configuration and train parameters in train_coniguration.json
+1. Provide network configuration and train parameters in train_coniguration.json
 
 Options:
 
@@ -20,7 +16,7 @@ Options:
 
 - n_epochs: number of epoches
 
-3. Provide dataset configuration in data_coniguration.json. Train and test datasets should be defined:
+2. Provide dataset configuration in data_coniguration.json. Train and test datasets should be defined:
 
 Options:
 
@@ -33,6 +29,10 @@ Options:
 - noise: data noise
 
 - random_state: random state for data generation
+
+3. Build docker container
+
+```docker build /path/to/directory/nn_playground -t nn```
 
 # Usage
 
